@@ -1,5 +1,7 @@
 package tensor
 
+import "math/rand"
+
 type Tensor struct {
 	value      float32
 	grad       float32
@@ -13,11 +15,27 @@ func NewTensor(value float32) *Tensor {
 	}
 }
 
+func RandomTensor() *Tensor {
+	return &Tensor{
+		value: rand.Float32(),
+	}
+}
+
 func NewTensorArray(value []float32) []*Tensor {
 	tensor_arr := make([]*Tensor, len(value))
 
 	for i := 0; i < len(value); i++ {
 		tensor_arr[i] = NewTensor(value[i])
+	}
+
+	return tensor_arr
+}
+
+func RandomArray(size int) []*Tensor {
+	tensor_arr := make([]*Tensor, size)
+
+	for i := 0; i < size; i++ {
+		tensor_arr[i] = RandomTensor()
 	}
 
 	return tensor_arr
