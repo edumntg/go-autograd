@@ -3,15 +3,15 @@ package nn
 import . "go-nn/tensor"
 
 type Module struct {
-	layers []*Linear
+	layers []Layer
 }
 
 func NewModule() *Module {
-	layers := []*Linear{}
+	layers := []Layer{}
 	return &Module{layers: layers}
 }
 
-func (m *Module) Add(layer *Linear) {
+func (m *Module) Add(layer Layer) {
 	layers := append(m.layers, layer)
 	m.layers = layers
 }
@@ -28,4 +28,10 @@ func (m *Module) Forward(x []*Tensor) []*Tensor {
 	}
 
 	return output
+}
+
+func (m *Module) Print() {
+	for i := 0; i < len(m.layers); i++ {
+		m.layers[i].Print()
+	}
 }

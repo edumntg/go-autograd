@@ -40,8 +40,11 @@ func main() {
 	// Test module
 	m := NewModule()
 	m.Add(NewLinear(8, 32))
+	m.Add(new(ReLU))
 	m.Add(NewLinear(32, 64))
+	m.Add(new(ReLU))
 	m.Add(NewLinear(64, 5))
+	m.Add(new(Softmax))
 
 	x = RandomTensorArray(8)
 
@@ -49,4 +52,7 @@ func main() {
 	m_out := m.Forward(x)
 	fmt.Println(len(m_out)) // should print 5
 
+	for i := 0; i < len(m_out); i++ {
+		fmt.Println(m_out[i].Get())
+	}
 }

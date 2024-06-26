@@ -16,10 +16,10 @@ func NewNeuron(n_in int) *Neuron {
 	weight_obj := make([]*Tensor, n_in)
 
 	for i := 0; i < n_in; i++ {
-		weight_obj[i] = NewTensor(rand.Float32())
+		weight_obj[i] = NewTensor(rand.Float64())
 	}
 
-	bias_obj := NewTensor(rand.Float32())
+	bias_obj := NewTensor(rand.Float64())
 
 	return &Neuron{W: weight_obj, B: bias_obj}
 }

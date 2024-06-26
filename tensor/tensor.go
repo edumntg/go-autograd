@@ -3,13 +3,13 @@ package tensor
 import "math/rand"
 
 type Tensor struct {
-	value      float32
-	grad       float32
+	value      float64
+	grad       float64
 	prev       []Tensor
 	_grad_func func()
 }
 
-func NewTensor(value float32) *Tensor {
+func NewTensor(value float64) *Tensor {
 	return &Tensor{
 		value: value,
 	}
@@ -17,11 +17,11 @@ func NewTensor(value float32) *Tensor {
 
 func RandomTensor() *Tensor {
 	return &Tensor{
-		value: rand.Float32(),
+		value: rand.Float64(),
 	}
 }
 
-func NewTensorArray(value []float32) []*Tensor {
+func NewTensorArray(value []float64) []*Tensor {
 	tensor_arr := make([]*Tensor, len(value))
 
 	for i := 0; i < len(value); i++ {
@@ -41,7 +41,7 @@ func RandomTensorArray(size int) []*Tensor {
 	return tensor_arr
 }
 
-func (t *Tensor) Get() float32 {
+func (t *Tensor) Get() float64 {
 	return t.value
 }
 
