@@ -4,10 +4,10 @@ import (
 	"fmt"
 	. "go-nn/nn"
 	. "go-nn/tensor"
-	"math/rand"
 )
 
 func main() {
+
 	// Test tensors
 	t1 := NewTensor(0.07)
 	t2 := NewTensor(0.35)
@@ -27,17 +27,26 @@ func main() {
 	// Test linear layer
 	fmt.Println("Printing linear layer...")
 	l1 := NewLinear(8, 10)
+
 	// Generate random input
-	val_arr := make([]float32, 8)
-	for i := 0; i < 8; i++ {
-		val_arr[i] = rand.Float32()
-	}
-	x := NewTensorArray(val_arr)
+	x := RandomTensorArray(8)
 
 	l_out := l1.Forward(x)
 
 	for i := 0; i < len(l_out); i++ {
 		fmt.Println(l_out[i].Get())
 	}
+
+	// Test module
+	m := NewModule()
+	m.Add(NewLinear(8, 32))
+	m.Add(NewLinear(32, 64))
+	m.Add(NewLinear(64, 5))
+
+	x = RandomTensorArray(8)
+
+	fmt.Println("Testing Module...")
+	m_out := m.Forward(x)
+	fmt.Println(len(m_out)) // should print 5
 
 }

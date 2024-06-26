@@ -31,7 +31,7 @@ func NewTensorArray(value []float32) []*Tensor {
 	return tensor_arr
 }
 
-func RandomArray(size int) []*Tensor {
+func RandomTensorArray(size int) []*Tensor {
 	tensor_arr := make([]*Tensor, size)
 
 	for i := 0; i < size; i++ {
