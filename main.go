@@ -40,11 +40,11 @@ func main() {
 	// Test module
 	m := NewModule()
 	m.Add(NewLinear(8, 32))
-	m.Add(new(ReLU))
+	m.Add(Relu())
 	m.Add(NewLinear(32, 64))
-	m.Add(new(ReLU))
+	m.Add(Relu())
 	m.Add(NewLinear(64, 5))
-	m.Add(new(Softmax))
+	m.Add(Softmax())
 
 	x = RandomTensorArray(8)
 
