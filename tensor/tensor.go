@@ -7,16 +7,28 @@ type Tensor struct {
 	_grad_func func()
 }
 
-func NewTensor(value, grad float32) *Tensor {
-	t := new(Tensor)
-	t.value = value
-	t.grad = grad
-	t.prev = []Tensor{}
-	return t
+func NewTensor(value float32) *Tensor {
+	return &Tensor{
+		value: value,
+	}
 }
 
-func (t *Tensor) add(other *Tensor) Tensor {
-	out := Tensor{value: (t.value + other.value), prev: []Tensor{*t, *other}}
+func NewTensorArray(value []float32) []*Tensor {
+	tensor_arr := make([]*Tensor, len(value))
+
+	for i := 0; i < len(value); i++ {
+		tensor_arr[i] = NewTensor(value[i])
+	}
+
+	return tensor_arr
+}
+
+func (t *Tensor) Get() float32 {
+	return t.value
+}
+
+func (t *Tensor) Add(other *Tensor) *Tensor {
+	out := &Tensor{value: (t.value + other.value), prev: []Tensor{*t, *other}}
 
 	// Declare the gradient function. This is the function used to calculate the gradient for a + operation
 	_grad_func := func() {
@@ -28,8 +40,8 @@ func (t *Tensor) add(other *Tensor) Tensor {
 	return out
 }
 
-func (t *Tensor) mul(other *Tensor) Tensor {
-	out := Tensor{value: (t.value * other.value), prev: []Tensor{*t, *other}}
+func (t *Tensor) Mul(other *Tensor) *Tensor {
+	out := &Tensor{value: (t.value * other.value), prev: []Tensor{*t, *other}}
 
 	_grad_func := func() {
 		t.grad = out.grad * other.value
@@ -40,8 +52,8 @@ func (t *Tensor) mul(other *Tensor) Tensor {
 	return out
 }
 
-func (t *Tensor) div(other *Tensor) Tensor {
-	out := Tensor{value: (t.value / other.value), prev: []Tensor{*t, *other}}
+func (t *Tensor) Div(other *Tensor) *Tensor {
+	out := &Tensor{value: (t.value / other.value), prev: []Tensor{*t, *other}}
 
 	_grad_func := func() {
 		t.grad = out.grad / other.value
