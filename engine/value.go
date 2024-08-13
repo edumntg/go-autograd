@@ -197,7 +197,7 @@ func (v *Value) Optimize(lr float64) {
 	v.Data -= lr * v.Grad
 }
 
-func Random() *Value {
+func RandomValue() *Value {
 	return NewValue(rng.Float64()*2 - 1)
 }
 
