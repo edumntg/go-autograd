@@ -2,57 +2,29 @@ package main
 
 import (
 	"fmt"
-	. "go-nn/nn"
-	. "go-nn/tensor"
+	. "go-nn/engine"
 )
 
 func main() {
 
-	// Test tensors
-	t1 := NewTensor(0.07)
-	t2 := NewTensor(0.35)
-	t3 := t1.Add(t2)
-	t4 := t1.Mul(t2)
-	t5 := t1.Div(t2)
+	// Test value
+	a := NewValue(-4.0)
+	b := NewValue(2.0)
+	c := a.Add(b)
+	d := a.Mul(b).Add(b.Pow(3))
 
-	fmt.Println("Tensor add:", t3)
-	fmt.Println("Tensor mul:", t4)
-	fmt.Println("Tensor div:", t5)
+	c = c.Add(c.AddFloat(1.0))
+	c = c.Add(c.AddFloat(1.0).Add(a.Neg()))
+	d = d.Add(d.MulFloat(2.0).Add(b.Add(a).ReLU()))
+	d = d.Add(d.MulFloat(3.0).Add(b.Sub(a).ReLU()))
 
-	// Test Neurons
-	fmt.Println("Printing Neuron...")
-	n1 := NewNeuron(10)
-	n1.Print()
+	e := c.Sub(d)
+	f := e.Pow(2)
+	g := f.DivFloat(2.0)
+	g = g.Add(f.Pow(-1).MulFloat(10))
+	fmt.Println(g.ToString())
+	g.Backward()
+	fmt.Println(a.ToString())
+	fmt.Println(b.ToString())
 
-	// Test linear layer
-	fmt.Println("Printing linear layer...")
-	l1 := NewLinear(8, 10)
-
-	// Generate random input
-	x := RandomTensorArray(8)
-
-	l_out := l1.Forward(x)
-
-	for i := 0; i < len(l_out); i++ {
-		fmt.Println(l_out[i].Get())
-	}
-
-	// Test module
-	m := NewModule()
-	m.Add(NewLinear(8, 32))
-	m.Add(Relu())
-	m.Add(NewLinear(32, 64))
-	m.Add(Relu())
-	m.Add(NewLinear(64, 5))
-	m.Add(Softmax())
-
-	x = RandomTensorArray(8)
-
-	fmt.Println("Testing Module...")
-	m_out := m.Forward(x)
-	fmt.Println(len(m_out)) // should print 5
-
-	for i := 0; i < len(m_out); i++ {
-		fmt.Println(m_out[i].Get())
-	}
 }
