@@ -6,50 +6,77 @@ import (
 	"math/rand"
 )
 
+type BackwardMethod func()
+
 type Value struct {
-	data         float64
-	grad         float64
+	Data         float64
+	Grad         float64
 	_backward    BackwardMethod
-	_prev        map[*Value]bool
-	requiresGrad bool
+	Prev         map[*Value]bool
+	RequiresGrad bool
 }
 
-func NewValueWithChildren(data float64, children map[*Value]bool) *Value {
-	return &Value{
-		data: data,
-		grad: 0.0,
-		_backward: BackwardMethod{
-			run: func() {
-				return
-			},
-		},
-		_prev:        children,
-		requiresGrad: true,
+var rng = rand.New(rand.NewSource(0))
+
+func NewValue(data float64, children ...*Value) *Value {
+	v := &Value{
+		Data:         data,
+		Grad:         0,
+		_backward:    func() {},
+		Prev:         make(map[*Value]bool),
+		RequiresGrad: true,
 	}
-}
-
-func NewValue(data float64) *Value {
-	return NewValueWithChildren(data, map[*Value]bool{})
+	for _, child := range children {
+		v.Prev[child] = true
+	}
+	return v
 }
 
 func (v *Value) Add(other *Value) *Value {
-	out := NewValueWithChildren(v.data+other.data, map[*Value]bool{v: true, other: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad || !other.requiresGrad {
-				return
-			}
-
-			v.grad += out.grad
-			other.grad += out.grad
-		},
+	out := NewValue(v.Data+other.Data, v, other)
+	out._backward = func() {
+		if !v.RequiresGrad && !other.RequiresGrad {
+			return
+		}
+		v.Grad += out.Grad
+		other.Grad += out.Grad
 	}
-
 	return out
 }
 
 func (v *Value) AddFloat(other float64) *Value {
-	return v.Add(NewValueWithChildren(other, map[*Value]bool{}))
+	return v.Add(NewValue(other))
+}
+
+func (v *Value) Mul(other *Value) *Value {
+	out := NewValue(v.Data*other.Data, v, other)
+	out._backward = func() {
+		if !v.RequiresGrad && !other.RequiresGrad {
+			return
+		}
+		v.Grad += other.Data * out.Grad
+		other.Grad += v.Data * out.Grad
+	}
+	return out
+}
+
+func (v *Value) MulFloat(other float64) *Value {
+	return v.Mul(NewValue(other))
+}
+
+func (v *Value) Pow(other float64) *Value {
+	out := NewValue(math.Pow(v.Data, other), v)
+	out._backward = func() {
+		if !v.RequiresGrad {
+			return
+		}
+		v.Grad += other * math.Pow(v.Data, other-1) * out.Grad
+	}
+	return out
+}
+
+func (v *Value) Neg() *Value {
+	return v.MulFloat(-1)
 }
 
 func (v *Value) Sub(other *Value) *Value {
@@ -60,170 +87,127 @@ func (v *Value) SubFloat(other float64) *Value {
 	return v.AddFloat(-other)
 }
 
-func (v *Value) Mul(other *Value) *Value {
-	out := NewValueWithChildren(v.data*other.data, map[*Value]bool{v: true, other: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad || !other.requiresGrad {
-				return
-			}
-
-			v.grad += other.grad * out.grad
-			other.grad += v.data * out.grad
-		},
-	}
-
-	return out
-}
-
-func (v *Value) MulFloat(other float64) *Value {
-	return v.Mul(NewValueWithChildren(other, map[*Value]bool{}))
-}
-
-func (v *Value) Pow(other float64) *Value {
-	out := NewValueWithChildren(math.Pow(v.data, other), map[*Value]bool{v: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad {
-				return
-			}
-
-			v.grad += other * math.Pow(v.data, other-1) * out.grad
-		},
-	}
-	return out
-}
-
-func (v *Value) PowInt(other int64) *Value {
-	return v.Pow(float64(other))
-}
-
-func (v *Value) Neg() *Value {
-	return v.MulFloat(-1.0)
-}
-
 func (v *Value) Div(other *Value) *Value {
-	return v.Mul(other.PowInt(-1))
+	return v.Mul(other.Pow(-1))
 }
 
 func (v *Value) DivFloat(other float64) *Value {
-	otherVal := NewValueWithChildren(other, map[*Value]bool{})
-	return v.Div(otherVal)
+	return v.Div(NewValue(other))
 }
 
 func (v *Value) Inv() *Value {
-	return v.Pow(-1.0)
+	return v.Pow(-1)
 }
 
 func (v *Value) Exp() *Value {
-	out := NewValueWithChildren(math.Exp(v.data), map[*Value]bool{v: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad {
-				return
-			}
-
-			v.grad += math.Exp(v.data) * out.grad
-		},
+	out := NewValue(math.Exp(v.Data), v)
+	out._backward = func() {
+		if !v.RequiresGrad {
+			return
+		}
+		v.Grad += math.Exp(v.Data) * out.Grad
 	}
-
 	return out
 }
 
 func (v *Value) Abs() *Value {
-	out := NewValueWithChildren(math.Abs(v.data), map[*Value]bool{v: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad {
-				return
-			}
-
-			var value float64 = -1.0
-			if v.data > 0 {
-				value = 1.0
-			}
-
-			v.grad += value * out.grad
-		},
+	out := NewValue(math.Abs(v.Data), v)
+	out._backward = func() {
+		if !v.RequiresGrad {
+			return
+		}
+		value := -1.0
+		if v.Data > 0 {
+			value = 1.0
+		}
+		v.Grad += value * out.Grad
 	}
-
 	return out
 }
 
-func (v *Value) Log(other *Value) *Value {
-	out := NewValueWithChildren(math.Log(v.data), map[*Value]bool{v: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad {
-				return
-			}
-
-			v.grad += v.Inv().data * out.grad
-		},
+func (v *Value) Log() *Value {
+	out := NewValue(math.Log(v.Data), v)
+	out._backward = func() {
+		if !v.RequiresGrad {
+			return
+		}
+		v.Grad += v.Inv().Data * out.Grad
 	}
-
 	return out
 }
 
-func (v *Value) ReLU() *Value {
-	var current float64 = v.data
+func (v *Value) Relu() *Value {
+	current := v.Data
 	if current < 0 {
 		current = 0
 	}
-
-	out := NewValueWithChildren(current, map[*Value]bool{v: true})
-	out._backward = BackwardMethod{
-		run: func() {
-			if !v.requiresGrad {
-				return
-			}
-
-			var value float64 = 0.0
-			if v.data > 0 {
-				value = 1.0
-			}
-
-			v.grad += value * out.grad
-		},
+	out := NewValue(current, v)
+	out._backward = func() {
+		if !v.RequiresGrad {
+			return
+		}
+		value := 0.0
+		if out.Data > 0 {
+			value = 1.0
+		}
+		v.Grad += value * out.Grad
 	}
 	return out
 }
 
 func (v *Value) Sigmoid() *Value {
-	return v.Neg().Exp().AddFloat(1.0).Inv()
+	return v.Neg().Exp().AddFloat(1).Inv()
 }
 
 func (v *Value) Backward() {
-	var topo []Value
+	topo := []*Value{}
 	visited := make(map[*Value]bool)
 
-	buildTopo(v, topo, visited)
-	v.grad = 1.0
+	var buildTopo func(*Value)
+	buildTopo = func(v *Value) {
+		if !visited[v] {
+			visited[v] = true
+			for child := range v.Prev {
+				buildTopo(child)
+			}
+			topo = append(topo, v)
+		}
+	}
+
+	buildTopo(v)
+	v.Grad = 1
 
 	for i := len(topo) - 1; i >= 0; i-- {
-		topo[i]._backward.run()
+		topo[i].Backward()
 	}
 }
 
-func buildTopo(v *Value, topo []Value, visited map[*Value]bool) {
-	if !visited[v] {
-		visited[v] = true
-		for value, exists := range v._prev {
-			if exists {
-				buildTopo(value, topo, visited)
-			}
-		}
-	}
+func (v *Value) Optimize(lr float64) {
+	v.Data -= lr * v.Grad
 }
 
 func Random() *Value {
-	return NewValue(rand.Float64())
+	return NewValue(rng.Float64()*2 - 1)
+}
+
+func Flatten(arr [][]*Value) []*Value {
+	out := make([]*Value, len(arr))
+	for i := range arr {
+		out[i] = arr[i][0]
+	}
+	return out
 }
 
 func (v *Value) Item() float64 {
-	return v.data
+	return v.Data
 }
 
-func (v *Value) ToString() string {
-	return fmt.Sprintf("Value(data=%f, grad=%f, requires_grad=%t)", v.data, v.grad, v.requiresGrad)
+func (v *Value) Detach() *Value {
+	out := NewValue(v.Data)
+	out.RequiresGrad = false
+	return out
+}
+
+func (v *Value) String() string {
+	return fmt.Sprintf("Value(data=%v, grad=%v, requires_grad=%t)", v.Data, v.Grad, v.RequiresGrad)
 }
