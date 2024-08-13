@@ -162,23 +162,34 @@ func (v *Value) Sigmoid() *Value {
 func (v *Value) Backward() {
 	topo := []*Value{}
 	visited := make(map[*Value]bool)
+	inProgress := make(map[*Value]bool)
 
-	var buildTopo func(*Value)
-	buildTopo = func(v *Value) {
+	var buildTopo func(*Value) error
+	buildTopo = func(v *Value) error {
+		if inProgress[v] {
+			return fmt.Errorf("cycle detected in computation graph")
+		}
 		if !visited[v] {
-			visited[v] = true
+			inProgress[v] = true
 			for child := range v.Prev {
-				buildTopo(child)
+				if err := buildTopo(child); err != nil {
+					return err
+				}
 			}
+			delete(inProgress, v)
+			visited[v] = true
 			topo = append(topo, v)
 		}
+		return nil
 	}
 
-	buildTopo(v)
+	if err := buildTopo(v); err != nil {
+		panic(err) // or handle the error appropriately
+	}
 	v.Grad = 1
 
 	for i := len(topo) - 1; i >= 0; i-- {
-		topo[i].Backward()
+		topo[i]._backward()
 	}
 }
 
