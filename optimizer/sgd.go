@@ -35,7 +35,7 @@ func NewSgdWithMomentum(parameters []*Value, lr float64, momentum float64) *Sgd 
 }
 
 func (sgd *Sgd) step() {
-	for i, param := range sgd.parameters {
+	for i, param := range sgd.Parameters() {
 		sgd.velocity[i] = sgd.momentum*sgd.velocity[i] - sgd.lr*param.Grad
 		param.Data += sgd.velocity[i]
 	}

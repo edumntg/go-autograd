@@ -9,8 +9,29 @@ import (
 	"go-nn/scaler"
 )
 
-func main() {
+func TestValue() {
+	a := NewValue(-4.0)
+	b := NewValue(2.0)
+	c := a.Add(b)                                 // c = a + b
+	d := a.Mul(b).Add(b.Pow(3))                   // d = a * b + b^3
+	c = c.Add(c.AddFloat(1))                      // c += c + 1
+	c = c.Add(c.AddFloat(1).Add(a.Neg()))         // c += 1 + c + (-a)
+	d = d.Add(d.MulFloat(2).Add(b.Add(a).Relu())) // d += 2*d + (b+a).relu()
+	d = d.Add(d.MulFloat(3).Add(b.Sub(a).Relu())) // d += 3*d + (b-a).relu()
+	e := c.Sub(d)                                 // e = c - d
+	f := e.Pow(2)                                 // f = e^2
+	g := f.DivFloat(2)                            // g = f / 2
+	g = g.Add(f.Pow(-1).MulFloat(10))             // g = g + 10 / f
 
+	fmt.Println(g.Data) // prints 24.7041
+
+	g.Backward()
+
+	fmt.Println(a.Grad) // 138.8338 or dg/da
+	fmt.Println(b.Grad) // 645.5773 or dg/db
+}
+
+func TestMLP() {
 	var N int = 100
 	var EPOCHS int = 100
 	var lr float64 = 1e-1
@@ -48,13 +69,18 @@ func main() {
 
 		scores := mlp.Forward(x)
 
-		lossVal := criterion.Forward(scores, y)
+		lossVal := criterion.Forward(y, scores)
 
 		lossVal.Backward()
 
 		// Update params
 		optim.Step()
 
-		fmt.Printf("Epoch %d, Loss %.4f\n", epoch, lossVal.Item())
+		fmt.Printf("Epoch %d, Loss %.10f\n", epoch, lossVal.Item())
 	}
+}
+
+func main() {
+	//TestValue()
+	TestMLP()
 }

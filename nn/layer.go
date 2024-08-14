@@ -1,6 +1,7 @@
 package nn
 
 import (
+	"errors"
 	"fmt"
 	. "go-nn/engine"
 )
@@ -31,13 +32,16 @@ func NewLayer(inSize, outSize int) *Layer {
 	}
 }
 
-func (l *Layer) Forward(x [][]*Value) [][]*Value {
+func (l *Layer) Forward(x [][]*Value) ([][]*Value, error) {
 	// Apply matrix multiplication between x and W + b
 	rows1 := len(x)
-	//cols1 := len(x[0])
+	cols1 := len(x[0])
 	rows2 := len(l.W)
 	cols2 := len(l.W[0])
 
+	if cols1 != rows2 {
+		return nil, errors.New("invalid shapes between inputs and weights")
+	}
 	out := make([][]*Value, rows1)
 
 	for i := 0; i < rows1; i++ {
@@ -57,7 +61,7 @@ func (l *Layer) Forward(x [][]*Value) [][]*Value {
 		}
 	}
 
-	return out
+	return out, nil
 }
 
 func (l *Layer) Parameters() []*Value {

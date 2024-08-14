@@ -1,6 +1,8 @@
 package nn
 
-import . "go-nn/engine"
+import (
+	. "go-nn/engine"
+)
 
 type MLP struct {
 	Module
@@ -15,8 +17,10 @@ func NewMLP() *MLP {
 }
 
 func (mlp *MLP) Forward(x [][]*Value) []*Value {
+	//fmt.Printf("Input size: (%d, %d)\n", len(x), len(x[0]))
 	for _, layer := range mlp.Layers {
-		x = layer.Forward(x)
+		x, _ = layer.Forward(x)
+		//fmt.Printf("Size after layer %d: (%d, %d)\n", i, len(x), len(x[0]))
 	}
 
 	return Flatten(x)
