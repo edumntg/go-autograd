@@ -6,7 +6,11 @@ type MSELoss struct {
 	Loss
 }
 
-func (mse *MSELoss) forward(yTrue []*Value, yPred []*Value) *Value {
+func NewMSELoss() *MSELoss {
+	return &MSELoss{}
+}
+
+func (mse *MSELoss) Forward(yTrue []*Value, yPred []*Value) *Value {
 	N := len(yTrue)
 	out := NewValue(0.0)
 	for i := 0; i < N; i++ {

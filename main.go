@@ -1,44 +1,60 @@
 package main
 
-import . "go-nn/engine"
+import (
+	"fmt"
+	. "go-nn/engine"
+	"go-nn/loss"
+	"go-nn/nn"
+	"go-nn/optimizer"
+	"go-nn/scaler"
+)
 
 func main() {
 
-	// Test value
-	//a := NewValue(-4.0)
-	//b := NewValue(2.0)
-	//c := a.Add(b)
-	//d := a.Mul(b).Add(b.Pow(3))
-	//
-	//c = c.Add(c.AddFloat(1.0))
-	//c = c.Add(c.AddFloat(1.0).Add(a.Neg()))
-	//d = d.Add(d.MulFloat(2.0).Add(b.Add(a).Relu()))
-	//d = d.Add(d.MulFloat(3.0).Add(b.Sub(a).Relu()))
-	//
-	//e := c.Sub(d)
-	//f := e.Pow(2)
-	//g := f.DivFloat(2.0)
-	//g = g.Add(f.Pow(-1).MulFloat(10))
-	//fmt.Println(g.String()) // 24.5041
-	//g.Backward()
-	//fmt.Println(a.String()) // 138.8338
-	//fmt.Println(b.String()) // 645.5773
-
 	var N int = 100
 	var EPOCHS int = 100
-	var lr float64 = 1e-3
+	var lr float64 = 1e-1
 
-	var nFeatures int = 8
-	var x [][]Value = make([][]Value, N)
-	var y []Value = make([]Value, N)
+	var nFeatures int = 2
+	var x [][]*Value = make([][]*Value, N)
+	var y []*Value = make([]*Value, N)
 
 	for i := 0; i < N; i++ {
-		x[i] = make([]Value, nFeatures)
+		x[i] = make([]*Value, nFeatures)
 		for j := 0; j < nFeatures; j++ {
-			x[i][j] = *RandomValue()
+			x[i][j] = RandomValue()
 			x[i][j].RequiresGrad = false
+		}
+		y[i] = NewValue((x[i][0].MulFloat(0.5).Add(x[i][1].MulFloat(-7.5)).AddFloat(20.0)).Data)
+		y[i].RequiresGrad = false
 
-			y[i] = *NewValue(x[i][0].MulFloat(0.5).Add(x[i][1].MulFloat(-7.5)).AddFloat(20.0).Data)
-			y[i].RequiresGrad = false;
+	}
+
+	// Scale data
+	sc := scaler.NewScaler()
+	sc.FitTransformArray(x)
+	sc.FitTransformSingle(y)
+
+	mlp := nn.NewMLP()
+	mlp.Add(nn.NewLayer(nFeatures, 32))
+	mlp.Add(nn.NewLayer(32, 16))
+	mlp.Add(nn.NewLayer(16, 1))
+
+	criterion := loss.NewMSELoss()
+	optim := optimizer.NewSgd(mlp.Parameters(), lr)
+
+	for epoch := 0; epoch < EPOCHS; epoch++ {
+		optim.ZeroGrad()
+
+		scores := mlp.Forward(x)
+
+		lossVal := criterion.Forward(scores, y)
+
+		lossVal.Backward()
+
+		// Update params
+		optim.Step()
+
+		fmt.Printf("Epoch %d, Loss %.4f\n", epoch, lossVal.Item())
 	}
 }
